@@ -19,6 +19,36 @@ const logFormat = printf(({ level, message, timestamp, stack, ...metadata }) => 
 });
 
 // Create logger instance
+// Define transports
+const transports = [
+    new winston.transports.Console({
+        format: combine(
+            colorize(),
+            logFormat
+        ),
+    }),
+];
+
+// Only add file transports in development
+if (config.nodeEnv !== 'production') {
+    transports.push(
+        new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'error',
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+        })
+    );
+    transports.push(
+        new winston.transports.File({
+            filename: 'logs/combined.log',
+            maxsize: 5242880, // 5MB
+            maxFiles: 5,
+        })
+    );
+}
+
+// Create logger instance
 const logger = winston.createLogger({
     level: config.nodeEnv === 'production' ? 'info' : 'debug',
     format: combine(
@@ -26,35 +56,18 @@ const logger = winston.createLogger({
         timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         logFormat
     ),
-    transports: [
-        // Console transport
-        new winston.transports.Console({
-            format: combine(
-                colorize(),
-                logFormat
-            ),
-        }),
-        // File transport for errors
-        new winston.transports.File({
-            filename: 'logs/error.log',
-            level: 'error',
-            maxsize: 5242880, // 5MB
-            maxFiles: 5,
-        }),
-        // File transport for all logs
-        new winston.transports.File({
-            filename: 'logs/combined.log',
-            maxsize: 5242880, // 5MB
-            maxFiles: 5,
-        }),
-    ],
-    exceptionHandlers: [
-        new winston.transports.File({ filename: 'logs/exceptions.log' }),
-    ],
-    rejectionHandlers: [
-        new winston.transports.File({ filename: 'logs/rejections.log' }),
-    ],
+    transports: transports,
 });
+
+// Add exception/rejection handlers only in dev to avoid EACCES
+if (config.nodeEnv !== 'production') {
+    logger.exceptions.handle(
+        new winston.transports.File({ filename: 'logs/exceptions.log' })
+    );
+    logger.rejections.handle(
+        new winston.transports.File({ filename: 'logs/rejections.log' })
+    );
+}
 
 // Stream for Morgan HTTP logger
 logger.stream = {
