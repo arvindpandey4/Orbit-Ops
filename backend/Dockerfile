@@ -4,7 +4,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY backend/package*.json ./
 
 # Install dependencies
 # Install dependencies
@@ -26,7 +26,8 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy application code
-COPY --chown=nodejs:nodejs . .
+# Copy application code from backend directory (assuming root context)
+COPY --chown=nodejs:nodejs backend/ .
 
 # Switch to non-root user
 USER nodejs
