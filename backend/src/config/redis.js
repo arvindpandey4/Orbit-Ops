@@ -10,6 +10,8 @@ class RedisClient {
 
   async connect() {
     try {
+      logger.info("REDIS_URL =", process.env.REDIS_URL);
+      
       this.client = createClient({
         url: process.env.REDIS_URL,
         socket: {
