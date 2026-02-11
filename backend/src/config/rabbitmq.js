@@ -11,7 +11,7 @@ class RabbitMQClient {
 
   async connect() {
     if (!config.rabbitmq.url) {
-      logger.warn("RABBITMQ_URL not set — skipping RabbitMQ");
+      logger.warn("RABBITMQ_URL missing — RabbitMQ disabled");
       return;
     }
 
@@ -20,8 +20,8 @@ class RabbitMQClient {
 
       this.connection = await amqp.connect(config.rabbitmq.url);
       this.channel = await this.connection.createChannel();
-
       this.isConnected = true;
+
       logger.info("RabbitMQ connected");
 
       await this.channel.assertExchange(config.rabbitmq.exchanges.taskExchange, "topic", { durable: true });
@@ -44,14 +44,9 @@ class RabbitMQClient {
       );
 
       this.connection.on("close", () => {
-        logger.warn("RabbitMQ closed — reconnecting in 5s");
+        logger.warn("RabbitMQ closed — reconnecting");
         this.isConnected = false;
         setTimeout(() => this.connect(), 5000);
-      });
-
-      this.connection.on("error", (err) => {
-        logger.error("RabbitMQ error:", err);
-        this.isConnected = false;
       });
 
     } catch (err) {
@@ -60,23 +55,25 @@ class RabbitMQClient {
     }
   }
 
-  async publishEvent(exchange, routingKey, event) {
+  getChannel() {
+    return this.channel;
+  }
+
+  async sendToQueue(queue, payload) {
     if (!this.isConnected || !this.channel) return false;
 
-    this.channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(event)), {
+    this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(payload)), {
       persistent: true,
-      contentType: "application/json",
     });
 
     return true;
   }
 
-  async sendToQueue(queue, message) {
+  async publishEvent(exchange, routingKey, payload) {
     if (!this.isConnected || !this.channel) return false;
 
-    this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {
+    this.channel.publish(exchange, routingKey, Buffer.from(JSON.stringify(payload)), {
       persistent: true,
-      contentType: "application/json",
     });
 
     return true;
