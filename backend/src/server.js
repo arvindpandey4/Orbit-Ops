@@ -18,6 +18,7 @@ const io = initializeSocket(server);
 // Make io available to the app
 app.set('io', io);
 
+console.log("BUILD VERSION CHECK");
 
 // Start server
 const startServer = async () => {
