@@ -1,169 +1,63 @@
-# OrbitOps - Enterprise Task Management System
-## Production-Grade MERN Stack Application
+# Orbit Ops 🚀
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green.svg)](https://www.mongodb.com/)
-[![Redis](https://img.shields.io/badge/Redis-7.0-red.svg)](https://redis.io/)
-[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.12-orange.svg)](https://www.rabbitmq.com/)
-[![Railway](https://img.shields.io/badge/Deploy-Railway-blue.svg)](https://railway.app/)
-[![Vercel](https://img.shields.io/badge/Deploy-Vercel-black.svg)](https://vercel.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Orbit_Ops-success?style=for-the-badge&logo=vercel)](https://orbit-ops-ivory.vercel.app/)
+[![Backend Status](https://img.shields.io/badge/Backend-Online-success?style=for-the-badge&logo=railway)](https://orbit-ops-production.up.railway.app/api/health)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-OrbitOps is a production-ready, enterprise-grade task management system built with the MERN stack. It features real-time collaboration, event-driven architecture, robust RBAC, and automated transactional emails. Designed for high scalability and performance.
+**Orbit Ops** is an enterprise-grade, event-driven task management system designed for high-performance teams. It seamlessly integrates real-time collaboration, robust role-based access control (RBAC), and automated workflows into a unified, scalable platform. Built with a production-first mindset, Orbit Ops leverages a microservices-ready architecture to ensure reliability, security, and speed.
 
 ---
 
-## 🚀 Key Features
+## 🌟 Key Features
 
-### Core Functionality
-- **🔐 Advanced Authentication**:
-    - Admin-only user creation (Bcrypt hashing, 12 rounds).
-    - JWT-based auth with refresh tokens and Redis-backed blacklisting.
-    - Google OAuth2 integration with role segregation.
-- **🛡️ Strict Role-Based Access Control (RBAC)**:
-    - **Super Admin**: Full system control.
-    - **Admin**: Project-level administration and user management.
-    - **Manager**: Task assignment and project oversight.
-    - **Member**: Personal task execution and updates.
-- **💼 Project & Task Management**:
-    - Scoped project workspaces with hierarchical membership.
-    - Full Task CRUD with workflow statuses (Todo → In Progress → Done).
-    - **Late Submission Logic**: Mandatory "Reason for Delay" prompt for overdue tasks marked as 'Done'.
-- **⚡ Real-Time Collaboration**:
-    - **Socket.IO**: Instant updates for task creation, status changes, and assignments.
-    - **Redis Presence**: Live online/offline user status tracking.
-- **📧 Transactional Email System**:
-    - Automated HTML emails with custom branding (`⌘`) and responsive design.
-    - **Flows**: Welcome, Team Invitation, Password Reset, Task Assignment, Project Updates, Admin Approval Requests, Account Activation.
+### 🔐 Enterprise Security & Authentication
+- **Role-Based Access Control (RBAC)**: Granular permissions for Super Admin, Admin, Manager, and Member roles.
+- **Secure Authentication**: JWT-based session management with Redis-backed token blacklisting.
+- **OAuth Integration**: Seamless Google Sign-In support.
+- **Advanced Security**: Rate limiting, Helmet.js headers, and input sanitization.
 
-### Technical Architecture
-- **Event-Driven**: RabbitMQ event bus decouples core logic from notifications and logging.
-- **Microservice-Ready**: Clean separation of concerns (Repositories, Services, Controllers).
-- **Performance**: MongoDB compound indexes for efficient pagination and filtering.
-- **Security**: Helmet.js, Rate Limiting (Redis), Input Sanitization, CORS configuration.
+### ⚡ Real-Time Collaboration
+- **Instant Updates**: Socket.IO integration for real-time task changes, assignments, and status updates.
+- **Live Presence**: See who is online and active in the workspace instantly.
+- **Interactive Dashboard**: Dynamic Kanban-style boards and list views for efficient task tracking.
+
+### 🤖 Event-Driven Architecture
+- **Asynchronous Processing**: RabbitMQ message queues handle background jobs (emails, logs) without blocking the main thread.
+- **Microservices-Ready**: Decoupled services for scalability and maintainability.
+- **Reliable Notifications**: Automated transactional emails for welcomes, task assignments, and project updates.
+
+### 📊 Comprehensive Project Management
+- **Smart Workspaces**: Organize tasks into projects with dedicated teams.
+- **Task Lifecycle**: Full CRUD operations with detailed history, comments, and file attachments.
+- **Performance Analytics**: Visual insights into team productivity and task completion rates.
 
 ---
 
-## 📧 Email Notification Flows
+## 🛠️ Technology Stack
 
-The system includes a polished email service handling critical user lifecycle events:
-
-1.  **Onboarding**:
-    - `Welcome Email`: Sent upon registration.
-    - `Pending Approval`: Sent when a new account awaits Admin review.
-    - `Activation Confirmed`: Sent when an Admin approves an account.
-2.  **Collaboration**:
-    - `Project Invitation`: Secure token-based links for joining teams.
-    - `Task Assignment`: Instant notification when a task is assigned.
-    - `Project Update`: Alerts for significant project changes.
-3.  **Security**:
-    - `Password Reset`: Secure, time-limited reset links.
-    - `Admin Access Request`: Notifications for role elevation requests.
+| Category | Technologies |
+|----------|--------------|
+| **Frontend** | React (Vite), TypeScript, Tailwind CSS, Framer Motion, Zustand |
+| **Backend** | Node.js, Express.js, MongoDB Aggregations |
+| **Infrastructure** | Docker, RabbitMQ (CloudAMQP), Redis (Stack via Railway) |
+| **DevOps** | CI/CD (GitHub Actions), Railway (Backend), Vercel (Frontend) |
+| **Real-Time** | Socket.IO, Redis Pub/Sub |
 
 ---
 
-## 🏗️ Architecture & Deployment
+## 🚀 Live Deployment
 
-### Tech Stack
-*   **Frontend**: React (Vite), TypeScript, TailwindCSS, Framer Motion, Zustand, Lucide React, React Hot Toast.
-*   **Backend**: Node.js, Express, Mongoose, Passport.js.
-*   **Infrastructure**: MongoDB Atlas, Redis Cloud, CloudAMQP (RabbitMQ).
-*   **DevOps**: Docker, GitHub Actions (CI), Railway (Backend CD), Vercel (Frontend CD).
+The application is fully deployed and production-ready:
 
-### Data Flow
-```mermaid
-graph LR
-    User[Clients] -->|HTTP/WS| Frontend[React App ex: Vercel]
-    Frontend -->|API| Backend[Node API ex: Railway]
-    Backend -->|Auth/Data| Mongo[MongoDB Atlas]
-    Backend -->|Cache/PubSub| Redis[Redis Cloud]
-    Backend -->|Events| Rabbit[RabbitMQ CloudAMQP]
-    Rabbit -->|Process| Worker[Email Worker]
-    Worker -->|SMTP| Email[Gmail Service]
-```
-
-### CI/CD Pipeline
-*   **GitHub Actions**:
-    *   Triggers on `push` to `main`.
-    *   Runs unit tests and linting checks.
-    *   Verifies build integrity.
-*   **Deployment**:
-    *   **Backend**: Automatically deploys to Railway on successful merge & check.
-    *   **Frontend**: automatically deploys preview/production builds via Vercel.
+- **Frontend Application**: [https://orbit-ops-ivory.vercel.app/](https://orbit-ops-ivory.vercel.app/)
+- **Backend API**: [https://orbit-ops-production.up.railway.app/](https://orbit-ops-production.up.railway.app/)
 
 ---
 
-## 📂 Project Structure
+## 👨‍💻 Developer
 
-```
-Bridgelabz_Task_Management/
-├── backend/
-│   ├── src/
-│   │   ├── config/          # DB, Redis, Rabbit, Logger config
-│   │   ├── controllers/     # Request Handlers
-│   │   ├── middleware/      # Auth, RBAC, Validation
-│   │   ├── models/          # Mongoose Schemas (User, Task, Project)
-│   │   ├── services/        # Business Logic & Email Service
-│   │   ├── socket/          # Socket.IO Event Handlers
-│   │   └── routes/          # API Route Definitions
-│   ├── .github/workflows/   # CI/CD Pipelines
-│   └── fixSuperAdmin.js     # Admin Maintenance Scripts
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # Reusable UI (Cards, Modals)
-│   │   ├── pages/           # Route Views (Dashboard, Tasks)
-│   │   ├── store/           # Zustand State (Auth, Socket)
-│   │   └── types/           # TS Interfaces
-│   └── vite.config.ts
-├── docker-compose.yml       # Local Dev Orchestration
-└── README.md                # System Documentation
-```
+**Arvind**  
+*Lead Full-Stack Engineer*
 
 ---
-
-## 🚀 Quick Start (Local Development)
-
-### Prerequisites
-*   Node.js 18+
-*   Docker Desktop (for local DBs if not using cloud)
-*   Git
-
-### 1. Clone & Configure
-```bash
-git clone <repository-url>
-cd Bridgelabz_Task_Management
-# Configure .env files in /backend and /frontend based on examples
-```
-
-### 2. Start Application
-```powershell
-# Using the PowerShell automation script (Windows)
-.\start.ps1
-```
-*This script initializes containers (Mongo, Redis, RabbitMQ) and starts both servers.*
-
-### 3. Access
-*   **Frontend**: `http://localhost:5173`
-*   **Backend**: `http://localhost:5000`
-*   **RabbitMQ**: `http://localhost:15672`
-
----
-
-## 🛡️ RBAC Permission Matrix
-
-| Action | Super Admin | Admin | Manager | Member |
-| :--- | :---: | :---: | :---: | :---: |
-| **Manage Users** | ✅ | ✅ | ❌ | ❌ |
-| **Create Project** | ✅ | ✅ | ✅ | ❌ |
-| **Assign Tasks** | ✅ | ✅ | ✅ | ❌ |
-| **Create Task** | ✅ | ✅ | ✅ | ✅ (Self) |
-| **Delete Task** | ✅ | ✅ (Project Owner) | ✅ (Project Owner) | ❌ |
-| **View Activity** | ✅ | ✅ | ✅ (Own Project) | ✅ (Own) |
-
----
-
-## 👨‍💻 Author
-**Arvind** - *Lead Developer*
-
-Built as a benchmark for high-performance, scalable web application architecture.
-OrbitOps © 2026. All rights reserved.
+*© 2026 Orbit Ops. Engineered for Excellence.*

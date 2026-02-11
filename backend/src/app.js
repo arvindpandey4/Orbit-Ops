@@ -70,6 +70,23 @@ passport.use(
     )
 );
 
+// Root route - API information
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Task Management System API',
+        version: '1.0.0',
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth',
+            users: '/api/users',
+            projects: '/api/projects',
+            tasks: '/api/tasks',
+        },
+        documentation: 'https://github.com/arvindpandey4/Orbit-Ops',
+    });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({
