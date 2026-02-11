@@ -1,16 +1,18 @@
-# Multi-stage build for production optimization
+# ---------- Builder Stage ----------
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY backend/package*.json ./
+# Copy package files (Railway root = backend)
+COPY package*.json ./
 
-# Install dependencies
 # Install dependencies
 RUN npm install
 
-# Production stage
+# Copy source
+COPY . .
+
+# ---------- Production Stage ----------
 FROM node:18-alpine
 
 WORKDIR /app
@@ -19,15 +21,10 @@ WORKDIR /app
 RUN apk add --no-cache dumb-init
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN addgroup -S nodejs && adduser -S nodejs -G nodejs
 
-# Copy dependencies from builder
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-
-# Copy application code
-# Copy application code from backend directory (assuming root context)
-COPY --chown=nodejs:nodejs backend/ .
+# Copy app + node_modules from builder
+COPY --from=builder --chown=nodejs:nodejs /app /app
 
 # Switch to non-root user
 USER nodejs
@@ -37,9 +34,9 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:5000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+  CMD node -e "require('http').get('http://localhost:5000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"
 
-# Use dumb-init to handle signals properly
+# Use dumb-init
 ENTRYPOINT ["dumb-init", "--"]
 
 # Start application
