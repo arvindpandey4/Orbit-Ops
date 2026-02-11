@@ -5,7 +5,12 @@ import logger from '../config/logger.js';
 class EmailWorker {
     async start() {
         try {
-            const channel = await rabbitmqClient.getChannel();
+            const channel = rabbitmqClient.getChannel();
+            if (!channel) {
+                logger.warn('RabbitMQ channel not available — Email Worker disabled');
+                return;
+            }
+
             const queue = 'email_queue';
 
             await channel.assertQueue(queue, { durable: true });
@@ -64,7 +69,7 @@ class EmailWorker {
             });
         } catch (error) {
             logger.error('Failed to start email worker:', error);
-            setTimeout(() => this.start(), 5000); // Retry after 5 seconds
+            // Only retry if it was a setup error, but if channel is missing we already returned.
         }
     }
 }

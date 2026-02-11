@@ -13,32 +13,58 @@ class RedisStore {
     }
 
     async increment(key) {
-        const redisKey = this.prefix + key;
-        const current = await redisClient.client.incr(redisKey);
-
-        if (current === 1) {
-            await redisClient.client.expire(
-                redisKey,
-                Math.ceil(config.rateLimit.windowMs / 1000)
-            );
+        if (!redisClient.client || !redisClient.isConnected) {
+            // Fallback: return default values when Redis unavailable
+            return {
+                totalHits: 1,
+                resetTime: new Date(Date.now() + config.rateLimit.windowMs),
+            };
         }
 
-        const ttl = await redisClient.client.ttl(redisKey);
+        try {
+            const redisKey = this.prefix + key;
+            const current = await redisClient.client.incr(redisKey);
 
-        return {
-            totalHits: current,
-            resetTime: new Date(Date.now() + ttl * 1000),
-        };
+            if (current === 1) {
+                await redisClient.client.expire(
+                    redisKey,
+                    Math.ceil(config.rateLimit.windowMs / 1000)
+                );
+            }
+
+            const ttl = await redisClient.client.ttl(redisKey);
+
+            return {
+                totalHits: current,
+                resetTime: new Date(Date.now() + ttl * 1000),
+            };
+        } catch (error) {
+            // Fallback on error
+            return {
+                totalHits: 1,
+                resetTime: new Date(Date.now() + config.rateLimit.windowMs),
+            };
+        }
     }
 
     async decrement(key) {
-        const redisKey = this.prefix + key;
-        await redisClient.client.decr(redisKey);
+        if (!redisClient.client || !redisClient.isConnected) return;
+        try {
+            const redisKey = this.prefix + key;
+            await redisClient.client.decr(redisKey);
+        } catch (error) {
+            // Silently fail
+        }
     }
 
     async resetKey(key) {
-        const redisKey = this.prefix + key;
-        await redisClient.client.del(redisKey);
+        if (!redisClient.client || !redisClient.isConnected) return;
+        try {
+            const redisKey = this.prefix + key;
+            await redisClient.client.del(redisKey);
+        } catch (error) {
+            // Silently fail
+        }
     }
 }
 

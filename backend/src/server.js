@@ -29,20 +29,43 @@ const startServer = async () => {
         // Seed Super Admin
         await userService.seedSuperAdmin();
 
-        // Connect to Redis
-        await redisClient.connect();
+        // Connect to Redis (non-blocking)
+        try {
+            await redisClient.connect();
+        } catch (error) {
+            logger.warn('Redis connection failed - continuing without Redis:', error.message);
+        }
 
-        // Connect to RabbitMQ
+        // Connect to RabbitMQ (non-blocking)
         await rabbitmqClient.connect();
 
-        // Start activity log worker
-        await activityLogWorker.start();
+        // Start workers (non-blocking - failures won't crash server)
+        try {
+            await activityLogWorker.start();
+        } catch (error) {
+            logger.warn('Activity log worker failed to start:', error.message);
+        }
 
-        // Start email worker
-        await emailWorker.start();
+        try {
+            await emailWorker.start();
+        } catch (error) {
+            logger.warn('Email worker failed to start:', error.message);
+        }
+
+        // Handle server errors
+        server.on('error', (error) => {
+            if (error.code === 'EADDRINUSE') {
+                logger.error(`Port ${config.port} is already in use`);
+            } else {
+                logger.error('Server error:', error);
+            }
+            process.exit(1);
+        });
 
         // Start HTTP server
         server.listen(config.port, () => {
+            const rabbitMQStatus = rabbitmqClient.isConnected ? "Connected" : "Disabled/Failed";
+            const redisStatus = redisClient.isConnected ? "Connected" : "Disabled/Failed";
             logger.info(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
@@ -51,8 +74,8 @@ const startServer = async () => {
 ║   Environment: ${config.nodeEnv.padEnd(43)}║
 ║   Port:        ${config.port.toString().padEnd(43)}║
 ║   MongoDB:     Connected                                  ║
-║   Redis:       Connected                                  ║
-║   RabbitMQ:    Connected                                  ║
+║   Redis:       ${redisStatus.padEnd(43)}║
+║   RabbitMQ:    ${rabbitMQStatus.padEnd(43)}║
 ║   Socket.IO:   Initialized                                ║
 ║   OAuth ID:    ${config.google.clientId.substring(0, 15)}...              ║
 ║                                                           ║
@@ -64,8 +87,24 @@ const startServer = async () => {
         });
     } catch (error) {
         logger.error('Failed to start server:', error);
+        console.error('STARTUP ERROR:', error); // Also log to console for visibility
         process.exit(1);
     }
 };
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    console.error('UNHANDLED REJECTION:', reason);
+    process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception:', error);
+    console.error('UNCAUGHT EXCEPTION:', error);
+    process.exit(1);
+});
+
 startServer();
+
