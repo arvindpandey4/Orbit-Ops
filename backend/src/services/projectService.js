@@ -1,5 +1,6 @@
 import projectRepository from '../repositories/projectRepository.js';
 import rabbitmqClient from '../config/rabbitmq.js';
+import emailQueueManager from '../utils/emailQueueManager.js';
 import { AppError } from '../middleware/errorHandler.js';
 import logger from '../config/logger.js';
 
@@ -53,7 +54,7 @@ class ProjectService {
         populatedProject.members.forEach(async (member) => {
             if (member.user._id.toString() !== createdBy._id.toString()) {
                 try {
-                    await rabbitmqClient.publishEmail({
+                    await emailQueueManager.sendEmail({
                         type: 'project_assignment',
                         to: member.user.email,
                         user: { name: member.user.name, email: member.user.email },
@@ -61,7 +62,7 @@ class ProjectService {
                         addedBy: createdBy.name // Using name from createdBy object
                     });
                 } catch (error) {
-                    logger.error(`Failed to queue project assignment email for ${member.user.email}:`, error);
+                    logger.error(`Failed to send project assignment email for ${member.user.email}:`, error);
                 }
             }
         });

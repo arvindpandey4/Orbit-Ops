@@ -1,6 +1,7 @@
 import taskRepository from '../repositories/taskRepository.js';
 import projectRepository from '../repositories/projectRepository.js';
 import rabbitmqClient from '../config/rabbitmq.js';
+import emailQueueManager from '../utils/emailQueueManager.js';
 import { AppError } from '../middleware/errorHandler.js';
 import logger from '../config/logger.js';
 
@@ -69,7 +70,7 @@ class TaskService {
                 if (assignee._id.toString() === createdBy._id.toString()) return;
 
                 try {
-                    await rabbitmqClient.publishEmail({
+                    await emailQueueManager.sendEmail({
                         type: 'task_assignment',
                         to: assignee.email,
                         user: { name: assignee.name, email: assignee.email },
@@ -82,7 +83,7 @@ class TaskService {
                         project: { name: project.name }
                     });
                 } catch (error) {
-                    logger.error(`Failed to queue task assignment email for ${assignee.email}:`, error);
+                    logger.error(`Failed to send task assignment email for ${assignee.email}:`, error);
                 }
             });
         }

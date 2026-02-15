@@ -1,5 +1,6 @@
 import userRepository from '../repositories/userRepository.js';
 import rabbitmqClient from '../config/rabbitmq.js';
+import emailQueueManager from '../utils/emailQueueManager.js';
 import { AppError } from '../middleware/errorHandler.js';
 import logger from '../config/logger.js';
 
@@ -52,7 +53,7 @@ class UserService {
         // Send invitation email via RabbitMQ only if Active
         if (user.isActive) {
             try {
-                await rabbitmqClient.publishEmail({
+                await emailQueueManager.sendEmail({
                     type: 'invitation',
                     to: user.email,
                     data: {
@@ -64,9 +65,9 @@ class UserService {
                         temporaryPassword: temporaryPassword
                     }
                 });
-                logger.info(`Invitation email queued for ${user.email}`);
+                logger.info(`Invitation email sent for ${user.email}`);
             } catch (emailError) {
-                logger.error(`Failed to queue invitation email for ${user.email}:`, emailError);
+                logger.error(`Failed to send invitation email for ${user.email}:`, emailError);
             }
         } else {
             logger.info(`User created (Pending Approval): ${user.email} role: ${user.role}`);
@@ -96,14 +97,14 @@ class UserService {
 
         // Send approval email
         try {
-            await rabbitmqClient.publishToQueue('email_queue', {
+            await emailQueueManager.sendEmail({
                 type: 'admin_approved',
                 user: {
                     name: user.name,
                     email: user.email
                 }
             });
-            logger.info(`Admin approval email queued for ${user.email}`);
+            logger.info(`Admin approval email sent for ${user.email}`);
         } catch (e) {
             logger.error('Failed to send approval email', e);
         }
@@ -240,7 +241,7 @@ class UserService {
 
         // Send Welcome/Approval Email
         try {
-            await rabbitmqClient.publishToQueue('email_queue', {
+            await emailQueueManager.sendEmail({
                 type: 'welcome', // Or 'account_approved' if you have that template. 'welcome' is fine.
                 user: {
                     _id: user._id,
@@ -250,7 +251,7 @@ class UserService {
                     isActive: true
                 }
             });
-            logger.info(`Approval/Welcome email queued for ${user.email}`);
+            logger.info(`Approval/Welcome email sent for ${user.email}`);
         } catch (e) {
             logger.error('Failed to send activation email', e);
         }

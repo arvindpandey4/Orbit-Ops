@@ -3,6 +3,7 @@ import { generateTokenPair } from '../middleware/auth.js';
 import redisClient from '../config/redis.js';
 import rabbitmqClient from '../config/rabbitmq.js';
 import emailService from './emailService.js';
+import emailQueueManager from '../utils/emailQueueManager.js';
 import { AppError } from '../middleware/errorHandler.js';
 import logger from '../config/logger.js';
 import crypto from 'crypto';
@@ -55,11 +56,11 @@ class AuthService {
             if (userData.role === 'Admin') {
                 const superAdmin = await userRepository.findOne({ role: 'SuperAdmin' });
                 if (superAdmin) {
-                    rabbitmqClient.publishToQueue('email_queue', {
+                    emailQueueManager.sendEmail({
                         type: 'admin_approval_request',
                         admin: { name: user.name, email: user.email },
                         superAdmin: { email: superAdmin.email, name: superAdmin.name }
-                    }).catch(err => logger.error('Failed to queue admin approval email', err));
+                    }).catch(err => logger.error('Failed to send admin approval email', err));
                 }
             } else {
                 // Notify Admins about new member/manager
@@ -70,17 +71,17 @@ class AuthService {
             }
 
             // Notify user about pending status
-            rabbitmqClient.publishToQueue('email_queue', {
+            emailQueueManager.sendEmail({
                 type: 'account_pending', // Generic pending template
                 user: {
                     name: user.name,
                     email: user.email
                 }
-            }).catch(err => logger.error('Failed to queue pending email', err));
+            }).catch(err => logger.error('Failed to send pending email', err));
 
         } else {
             // Active User - Standard Welcome
-            rabbitmqClient.publishToQueue('email_queue', {
+            emailQueueManager.sendEmail({
                 type: 'welcome',
                 user: {
                     _id: user._id,
@@ -90,7 +91,7 @@ class AuthService {
                     isActive: user.isActive
                 }
             }).catch(err => {
-                logger.error(`Failed to queue welcome email for ${user.email}:`, err);
+                logger.error(`Failed to send welcome email for ${user.email}:`, err);
             });
         }
 
@@ -212,26 +213,26 @@ class AuthService {
                     // Notify SuperAdmin
                     const superAdmin = await userRepository.findOne({ role: 'SuperAdmin' });
                     if (superAdmin) {
-                        rabbitmqClient.publishToQueue('email_queue', {
+                        emailQueueManager.sendEmail({
                             type: 'admin_approval_request',
                             admin: { name: user.name, email: user.email },
                             superAdmin: { email: superAdmin.email, name: superAdmin.name }
-                        }).catch(err => logger.error('Failed to queue admin approval email', err));
+                        }).catch(err => logger.error('Failed to send admin approval email', err));
                     }
                     // Notify user about pending status (Admin specific or generic)
-                    rabbitmqClient.publishToQueue('email_queue', {
+                    emailQueueManager.sendEmail({
                         type: 'admin_pending',
                         user: { name: user.name, email: user.email }
-                    }).catch(err => logger.error('Failed to queue pending email', err));
+                    }).catch(err => logger.error('Failed to send pending email', err));
                 } else {
                     // Member Registration - Notify user about pending status
-                    rabbitmqClient.publishToQueue('email_queue', {
+                    emailQueueManager.sendEmail({
                         type: 'account_pending',
                         user: {
                             name: user.name,
                             email: user.email
                         }
-                    }).catch(err => logger.error('Failed to queue pending email', err));
+                    }).catch(err => logger.error('Failed to send pending email', err));
                 }
             }
         }
@@ -369,7 +370,7 @@ class AuthService {
         try {
             const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
-            await rabbitmqClient.publishToQueue('email_queue', {
+            await emailQueueManager.sendEmail({
                 type: 'reset_password',
                 user: {
                     email: user.email,

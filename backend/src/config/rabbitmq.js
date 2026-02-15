@@ -186,8 +186,16 @@ class RabbitMQClient {
 
   // Email Event
   async publishEmail(payload) {
-    if (!this.isConnected || !this.channel) return false;
+    if (!this.isConnected || !this.channel) {
+      logger.debug('RabbitMQ not available for email publishing');
+      return false;
+    }
     return this.sendToQueue('email_queue', payload);
+  }
+
+  // Check if RabbitMQ is available for operations
+  isAvailable() {
+    return this.isConnected && this.channel !== null;
   }
 }
 
